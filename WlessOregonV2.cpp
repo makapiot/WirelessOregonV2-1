@@ -18,23 +18,41 @@ OregonSensor::OregonSensor(uint8_t txPin, uint8_t channel, uint8_t sensorID, boo
 }
 
 inline void OregonSensor::sendOne(void) {
-    volatile uint8_t *tx_out = portOutputRegister(tx_port);
-    *tx_out &= ~tx_bit;                                 // digitalWrite(tx_pin, LOW);
+#if defined ( ESP8266 )
+    digitalWrite(tx_pin, LOW);
     delayMicroseconds(TIME);
-    *tx_out |= tx_bit;                                  // digitalWrite(tx_pin, HIGH);
+    digitalWrite(tx_pin, HIGH);
     delayMicroseconds(TWOTIME);
-    *tx_out &= ~tx_bit;                                 // digitalWrite(tx_pin, LOW);
+    digitalWrite(tx_pin, LOW);
     delayMicroseconds(TIME);
+#else
+    volatile uint8_t *tx_out = portOutputRegister(tx_port);
+    *tx_out &= ~tx_bit;                                 
+    delayMicroseconds(TIME);
+    *tx_out |= tx_bit;                                  
+    delayMicroseconds(TWOTIME);
+    *tx_out &= ~tx_bit;                                 
+    delayMicroseconds(TIME);
+#endif
 }
 
 inline void OregonSensor::sendZero(void) {
-    volatile uint8_t *tx_out = portOutputRegister(tx_port);
-    *tx_out |= tx_bit;                                  // digitalWrite(tx_pin, HIGH);
+#if defined ( ESP8266 )    
+    digitalWrite(tx_pin, HIGH);
     delayMicroseconds(TIME);
-    *tx_out &= ~tx_bit;                                 // digitalWrite(tx_pin, LOW);
+    digitalWrite(tx_pin, LOW);
     delayMicroseconds(TWOTIME);
-    *tx_out |= tx_bit;                                  // digitalWrite(tx_pin, HIGH);
+    digitalWrite(tx_pin, HIGH);
     delayMicroseconds(TIME);
+#else
+    volatile uint8_t *tx_out = portOutputRegister(tx_port);
+    *tx_out |= tx_bit;                                  
+    delayMicroseconds(TIME);
+    *tx_out &= ~tx_bit;                                 
+    delayMicroseconds(TWOTIME);
+    *tx_out |= tx_bit;                                  
+    delayMicroseconds(TIME);
+#endif    
 }
 
 bool OregonSensor::init(void) {
@@ -153,7 +171,11 @@ void DecodeOOK::begin(uint8_t int_num) {
     attachInterrupt(int_num, DecodeOOK::interuptHandler, CHANGE);
 }
 
+#if defined ( ESP8266 )
+ICACHE_RAM_ATTR void DecodeOOK::interuptHandler(void) {
+#else
 void DecodeOOK::interuptHandler(void) {
+#endif
     static int16_t last;
     // determine the pulse length in microseconds, for either polarity
     wl_pulse = micros() - last;
