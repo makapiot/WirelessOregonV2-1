@@ -20,21 +20,33 @@ void setup() {
   while(!bme.begin(0x76)) {
     delay(1000);
   }  
+
+  // Set BME to forced mode (take one sample and go to sleep)
+  bme.setSampling(Tiny_BME280::MODE_FORCED);  
 }
  
 void loop() {
-  digitalWrite(LED_PIN, HIGH);
+
+  // Read BME data, BME goes back to sleep after that
+  bme.takeForcedMeasurement();
   float temp = bme.readTemperature();
   float humidity = bme.readHumidity();
-  static bool battOK = true;  
 
-  // Serial.print("Sending data of sensor "); Serial.print(sensorID, HEX);
-  // Serial.print(": temp = "); Serial.print(temp);
-  // Serial.print(", humidity = "); Serial.println(humidity);
+  // Check battery status  
+  static bool battOK;
+  if(readVcc() > 2.1) {
+    battOK = true;
+  }  
+  else {
+    battOK = false;
+  }  
+
+  // Send the data over RF using the OS protocol
+  digitalWrite(LED_PIN, HIGH);
   os.sendTempHumidity((int)(temp * 10.0), (byte)humidity, battOK);
   digitalWrite(LED_PIN, LOW);
 
-  delay(5000);
+  delay(5*1000);
   
 }
 
